@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import "./App.css";
+import { requestForToken, onMessageListener } from "./firebase";
 
 function App() {
   const today = new Date().toISOString().split("T")[0];
@@ -32,82 +33,126 @@ const categories = [
   const [punishmentActive, setPunishmentActive] = useState(false);
   const [history, setHistory] = useState({});
 
-  useEffect(() => {
-    if (!currentUser) return;
-    const savedData = JSON.parse(localStorage.getItem(userKey)) || {};
-    setActivities(savedData.activities || []);
-    setPunishmentMsg(savedData.punishmentMsg || "");
-    setProgress(savedData.progress || {});
-    setPunishmentActive(savedData.punishmentActive || false);
-    setHistory(savedData.history || {});
-  }, [currentUser]);
+ useEffect(() => {
+  onMessageListener()
+    .then((payload) => {
+      alert(`${payload.notification.title}\n${payload.notification.body}`);
+    })
+    .catch((err) => console.log("FCM foreground error:", err));
+}, []);
 
-  useEffect(() => {
-    if (!currentUser) return;
-    localStorage.setItem(
-      userKey,
-      JSON.stringify({ activities, punishmentMsg, progress, punishmentActive, history })
-    );
-  }, [activities, punishmentMsg, progress, punishmentActive, history, currentUser]);
+useEffect(() => {
+  if (!currentUser) return;
 
-  useEffect(() => {
-    if (punishmentActive && punishmentMsg) alert(punishmentMsg);
-  }, [punishmentActive]);
+  const savedData = JSON.parse(localStorage.getItem(userKey)) || {};
 
-  useEffect(() => {
-    const interval = setInterval(() => {
-      if (punishmentActive && punishmentMsg) showNotification(punishmentMsg);
-    }, 30 * 60 * 1000);
+  setActivities(savedData.activities || []);
+  setPunishmentMsg(savedData.punishmentMsg || "");
+  setProgress(savedData.progress || {});
+  setPunishmentActive(savedData.punishmentActive || false);
+  setHistory(savedData.history || {});
+}, [currentUser]);
 
-    return () => clearInterval(interval);
-  }, [punishmentActive, punishmentMsg]);
+useEffect(() => {
+  if (!currentUser) return;
 
-  useEffect(() => {
-    if (!currentUser) return;
+  localStorage.setItem(
+    userKey,
+    JSON.stringify({
+      activities,
+      punishmentMsg,
+      progress,
+      punishmentActive,
+      history,
+    })
+  );
+}, [activities, punishmentMsg, progress, punishmentActive, history, currentUser]);
 
-    const autoCheck = setInterval(() => {
-      const now = new Date();
-      if (now.getHours() === 23 && now.getMinutes() === 59) {
-        checkDayResult();
-      }
-    }, 60000);
+useEffect(() => {
+  if (punishmentActive && punishmentMsg) {
+    alert(punishmentMsg);
+  }
+}, [punishmentActive]);
 
-    return () => clearInterval(autoCheck);
-  }, [currentUser, activities, progress, punishmentMsg]);
+useEffect(() => {
+  const interval = setInterval(() => {
+    if (punishmentActive && punishmentMsg) {
+      showNotification(punishmentMsg);
+    }
+  }, 30 * 60 * 1000);
 
-  const completedCount = activities.filter((activity) => progress[today]?.[activity.id]).length;
-  const progressPercent = activities.length === 0 ? 0 : Math.round((completedCount / activities.length) * 100);
+  return () => clearInterval(interval);
+}, [punishmentActive, punishmentMsg]);
 
-  const streak = Object.keys(history)
-    .sort()
-    .reverse()
-    .reduce((count, date) => {
-      if (history[date] === "clean") return count + 1;
-      return count;
-    }, 0);
+useEffect(() => {
+  if (!currentUser) return;
 
-  const level = streak >= 91 ? 5 : streak >= 31 ? 4 : streak >= 8 ? 3 : streak >= 1 ? 2 : 1;
+  const autoCheck = setInterval(() => {
+    const now = new Date();
 
-  const levelName =
-    level === 5
-      ? "Discipline Monster 👑"
-      : level === 4
-      ? "Unstoppable Beast"
-      : level === 3
-      ? "Consistency Warrior"
-      : level === 2
-      ? "Rising Fighter"
-      : "Beginner";
+    if (now.getHours() === 23 && now.getMinutes() === 59) {
+      checkDayResult();
+    }
+  }, 60000);
 
-  const nextLevelTarget = level === 1 ? 1 : level === 2 ? 8 : level === 3 ? 31 : level === 4 ? 91 : 91;
-  const levelProgress = level === 5 ? 100 : Math.min(Math.round((streak / nextLevelTarget) * 100), 100);
+  return () => clearInterval(autoCheck);
+}, [currentUser, activities, progress, punishmentMsg]);
 
-  const badges = [];
-  if (streak >= 1) badges.push("🏆 First Clean Day");
-  if (streak >= 7) badges.push("🔥 7 Day Streak");
-  if (streak >= 30) badges.push("💎 30 Day Streak");
-  if (streak >= 90) badges.push("👑 Discipline King");
-  if (activities.length >= 5) badges.push("⚡ Habit Builder");
+const completedCount = activities.filter(
+  (activity) => progress[today]?.[activity.id]
+).length;
+
+const progressPercent =
+  activities.length === 0
+    ? 0
+    : Math.round((completedCount / activities.length) * 100);
+
+const streak = Object.keys(history)
+  .sort()
+  .reverse()
+  .reduce((count, date) => {
+    if (history[date] === "clean") return count + 1;
+    return count;
+  }, 0);
+
+const level =
+  streak >= 91
+    ? 5
+    : streak >= 31
+    ? 4
+    : streak >= 8
+    ? 3
+    : streak >= 1
+    ? 2
+    : 1;
+
+const levelName =
+  level === 5
+    ? "Discipline Monster 👑"
+    : level === 4
+    ? "Unstoppable Beast"
+    : level === 3
+    ? "Consistency Warrior"
+    : level === 2
+    ? "Rising Fighter"
+    : "Beginner";
+
+const nextLevelTarget =
+  level === 1 ? 1 : level === 2 ? 8 : level === 3 ? 31 : level === 4 ? 91 : 91;
+
+const levelProgress =
+  level === 5
+    ? 100
+    : Math.min(Math.round((streak / nextLevelTarget) * 100), 100);
+
+const badges = [];
+
+if (streak >= 1) badges.push("🏆 First Clean Day");
+if (streak >= 7) badges.push("🔥 7 Day Streak");
+if (streak >= 30) badges.push("💎 30 Day Streak");
+if (streak >= 90) badges.push("👑 Discipline King");
+if (activities.length >= 5) badges.push("⚡ Habit Builder");
+
 const quotes = [
   "Discipline is choosing what you want most over what you want now.",
   "Nobody is coming to save you.",
@@ -117,9 +162,9 @@ const quotes = [
   "You either suffer the pain of discipline or the pain of disappointment.",
 ];
 
-const dailyQuote =
-  quotes[new Date().getDate() % quotes.length];
-  const getLast7Days = () => {
+const dailyQuote = quotes[new Date().getDate() % quotes.length];
+
+const getLast7Days = () => {
   const days = [];
 
   for (let i = 6; i >= 0; i--) {
@@ -405,9 +450,9 @@ const resetToday = () => {
   <p className="successRate">Success Rate: {weeklySuccessRate}%</p>
 </div>
 
-          <button onClick={requestNotificationPermission} className="notifyBtn">
-            Enable Notifications
-          </button>
+         <button onClick={requestForToken} className="notifyBtn">
+  Enable Firebase Notifications
+</button>
 
           {punishmentActive ? (
             <div className="punishmentBox">
