@@ -30,10 +30,14 @@ export const requestForToken = async () => {
     const token = await getToken(messaging, {
       vapidKey: "BFPmo8fCAuQUxPKbmwt7f7q2SvW41agL09v6F3TtDNNLPtUH5NruFwO_KwuxBKxzVSdKhCXXGLvfZ2MeYr4fL6g",
     });
-
-alert(token);
 console.log("FCM TOKEN:", token);
-    alert("Firebase notifications enabled ✅");
+
+if (!token) {
+  alert("No FCM token generated. Check service worker or VAPID key.");
+  return null;
+}
+
+alert("FCM TOKEN:\n" + token);
 
     return token;
   } catch (error) {
