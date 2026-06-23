@@ -320,11 +320,9 @@ button:hover {
 }
 
 .punishmentModal h1 {
-  color: white;
-  background: none;
-  -webkit-text-fill-color: white;
+  font-size: 32px;
+  line-height: 1.2;
 }
-
 .punishmentText {
   font-size: 24px;
   font-weight: 800;

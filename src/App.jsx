@@ -595,9 +595,9 @@ const resetToday = () => {
             <h1>❌ YOU FAILED TODAY</h1>
             <h2>You broke your promise.</h2>
             <p className="punishmentText">"{punishmentMsg}"</p>
-            <button onClick={() => alert("Complete a clean day to stop this.")}>
-              I Understand
-            </button>
+<button onClick={() => setPunishmentActive(false)}>
+  I Understand
+</button>
           </div>
         </div>
       )}
