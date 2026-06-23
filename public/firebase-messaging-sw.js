@@ -13,8 +13,16 @@ firebase.initializeApp({
 const messaging = firebase.messaging();
 
 messaging.onBackgroundMessage((payload) => {
-  self.registration.showNotification(payload.notification.title, {
-    body: payload.notification.body,
+  const notificationTitle =
+    payload.notification?.title || "🔥 Discipline Reminder";
+
+  const notificationOptions = {
+    body: payload.notification?.body || "Complete your habits.",
     icon: "/icon-192.png",
-  });
+  };
+
+  self.registration.showNotification(
+    notificationTitle,
+    notificationOptions
+  );
 });
